@@ -115,33 +115,6 @@ Tunables (in `installation.yaml`, under the component): `timeout` (1 s), `settle
 `poll_interval` (1 s), `slow_poll_interval` (5 s), `offline_after` (30 s), `command_max_age` (20 s),
 `confirm_reads` (3), `write_attempts` (2), `log_max_entries_per_poll` (20), `psu_voltage_threshold` (13 V).
 
-## Protocol (SmartLiving 1050)
-
-Every request starts with an 8-byte header `[op, 0, 0, addr_hi, addr_lo, len_hi, len_lo, checksum]`,
-op 0 = read, 1 = write, checksum = sum of the previous bytes & 0xFF.
-
-- **Read**: the panel answers `len` bytes and a checksum.
-- **Write**: the header is followed by the payload; the panel answers one byte (checksum of the
-  payload), then the outcome is read at 0x2004 (0 OK, 1 wrong PIN, 2 zones not ready, 3 not allowed).
-- PIN: 6 bytes, one digit per byte, padded with 0xFF.
-
-| Address | Length | Content |
-|---------|--------|---------|
-| 0x2000 | 16 | areas: arm nibble per area (1 away, 2 stay, 3 instant, 4 disarmed; low nibble = even area), then 2-byte bitmaps at 6 alarm, 8 tamper, 10 alarm memory, 12 tamper memory, 14 auto arm |
-| 0x2001 | 13 (of 26) | zones: 2 bits per zone (0 short, 1 closed, 2 open, 3 tamper). Reading 13 bytes (the 1050's 50 zones) keeps every answer length unique |
-| 0x2002 | 26 | 13-byte bypass bitmap (1 = included) + 13-byte test bitmap |
-| 0x2003 | 28 | 13-byte zone alarm memory, 7-byte tamper memory, outputs |
-| 0x2004 | 1 | result of the last write |
-| 0x2005 | 6 | faults and tampers; battery voltage `((b3 & 3) << 8 \| b2) × 0.01516` V |
-| 0x1FFE | 4 | event log head (little endian), 500 entries |
-| 0x1FFF | index | event log entry: the index goes in the length field, the answer is 367 bytes (time in seconds from 2000-01-01, areas, description/agent/location as 16-character texts) |
-| 0x2006 (W) | 14 | arm: PIN + 8 bytes of area nibbles (0 = unchanged) |
-| 0x2008 (W) | 8 | reset area memories: PIN + 2-byte area bitmap |
-| 0x2009 (W) | 9 | zone bypass: PIN + terminal + double zone flag + value (1 = bypass) |
-
-Zones and areas are 0-based. Bypass addresses the physical terminal: T1–T10 on the panel are 0–9,
-terminal t of expansion e is 10 + 5(e−1) + (t−1), terminal t of keypad k is 110 + 2(k−1) + (t−1).
-
 ## Tests
 
 The protocol helpers are pure C++ and are tested on the host (needs g++; here in a throwaway container):
@@ -153,7 +126,6 @@ docker run --rm -v $PWD:/src:ro -w /src alpine sh -c "apk add -q g++ && \
 
 ## Credits
 
-- The protocol comes from the INIM driver of HSYCO (`inim.java`) and from the
-  [smartliving2mqtt](https://github.com/mvimercati/smartliving2mqtt) bridge this firmware replaces.
+- [smartliving2mqtt](https://github.com/mvimercati/smartliving2mqtt) bridge this firmware replaces.
 - Template alarm panels and locks in Home Assistant, to ask for the PIN: idea from
   [lcavalli/esp-kyo-alarm-generic](https://github.com/lcavalli/esp-kyo-alarm-generic).
