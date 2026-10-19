@@ -1,0 +1,654 @@
+# Home Assistant view for the alarm (sections layout), for the example installation
+# (esphome/installation.example.yaml, homeassistant/inim.example.yaml).
+# Usage: dashboard -> add a view -> "Edit in YAML" (⋮) -> paste this file.
+# - zones: tap = details, tap on the icon (or hold) = exclusion (asks for the code);
+#   an excluded zone is shown by a red "· esclusa" tile instead of the normal one
+# - header badges appear only when something needs attention (excluded zones, alarm, faults...)
+# - fault bits list: shown/hidden by the "Dettagli" badge (helper input_boolean.mostra_dettagli_guasti,
+#   create it in HA: Settings > Devices > Helpers > Toggle)
+title: Antifurto
+path: antifurto
+icon: mdi:shield-home
+type: sections
+max_columns: 4
+sections:
+- type: grid
+  cards:
+  - type: heading
+    heading: Antifurto
+    heading_style: title
+    icon: mdi:shield-home
+    badges:
+    - type: entity
+      entity: binary_sensor.inim_smartliving_1050_connessione_centrale
+      name: Centrale
+      show_state: true
+      show_icon: true
+      color: green
+      visibility:
+      - condition: state
+        entity: binary_sensor.inim_smartliving_1050_connessione_centrale
+        state: 'on'
+    - type: entity
+      entity: binary_sensor.inim_smartliving_1050_connessione_centrale
+      name: Centrale non raggiungibile
+      show_state: false
+      show_icon: true
+      color: red
+      visibility:
+      - condition: state
+        entity: binary_sensor.inim_smartliving_1050_connessione_centrale
+        state_not: 'on'
+    - type: entity
+      entity: alarm_control_panel.antifurto
+      name: Allarme in corso
+      color: red
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: alarm_control_panel.antifurto
+        state: triggered
+    - type: entity
+      entity: binary_sensor.inim_smartliving_1050_sabotaggio
+      name: Sabotaggio
+      color: red
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: binary_sensor.inim_smartliving_1050_sabotaggio
+        state: 'on'
+    - type: entity
+      entity: binary_sensor.inim_smartliving_1050_memoria_allarme
+      name: Memoria allarme
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: binary_sensor.inim_smartliving_1050_memoria_allarme
+        state: 'on'
+    - type: entity
+      entity: binary_sensor.inim_smartliving_1050_memoria_sabotaggio
+      name: Memoria sabotaggio
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: binary_sensor.inim_smartliving_1050_memoria_sabotaggio
+        state: 'on'
+    - type: entity
+      entity: binary_sensor.inim_smartliving_1050_guasto
+      name: Guasto
+      color: amber
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: binary_sensor.inim_smartliving_1050_guasto
+        state: 'on'
+    - type: entity
+      entity: button.inim_smartliving_1050_refresh
+      name: Aggiorna
+      icon: mdi:refresh
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: perform-action
+        perform_action: button.press
+        target:
+          entity_id: button.inim_smartliving_1050_refresh
+  - type: tile
+    entity: alarm_control_panel.antifurto
+    name: Antifurto
+    grid_options:
+      columns: 12
+    features:
+    - type: alarm-modes
+      modes:
+      - disarmed
+      - armed_home
+      - armed_night
+      - armed_away
+  - type: tile
+    entity: sensor.inim_smartliving_1050_zone_in_allarme
+    name: Allarme da
+    icon: mdi:alarm-light
+    color: red
+    grid_options:
+      columns: 12
+    tap_action:
+      action: more-info
+      entity: lock.memorie_allarme
+    visibility:
+    - condition: state
+      entity: sensor.inim_smartliving_1050_zone_in_allarme
+      state_not: Nessuna
+  - type: tile
+    entity: sensor.inim_smartliving_1050_ultimo_evento
+    name: Ultimo evento
+    icon: mdi:history
+    state_content:
+    - state
+    - last_changed
+    grid_options:
+      columns: 12
+  - type: tile
+    entity: lock.memorie_allarme
+    name: Reset memorie
+    icon: mdi:history
+    state_content: state
+    tap_action:
+      action: more-info
+    grid_options:
+      columns: 6
+      rows: 1
+  - type: tile
+    entity: lock.esclusioni_zone
+    name: Annulla esclusioni
+    icon: mdi:shield-sync
+    state_content: state
+    tap_action:
+      action: more-info
+    grid_options:
+      columns: 6
+      rows: 1
+  - type: heading
+    heading: Centrale
+    heading_style: title
+    icon: mdi:alarm-panel-outline
+  - type: tile
+    entity: sensor.inim_smartliving_1050_last_write_result
+    name: Ultimo comando
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_memoria_allarme
+    name: Memoria allarme
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_memoria_sabotaggio
+    name: Memoria sabotaggio
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_sabotaggio
+    name: Sabotaggio
+  - type: tile
+    entity: sensor.inim_smartliving_1050_psu_voltage
+    name: Alimentatore
+  - type: tile
+    entity: sensor.inim_smartliving_1050_battery_voltage
+    name: Batteria
+  - type: heading
+    heading: Guasti
+    heading_style: subtitle
+    badges:
+    - type: entity
+      entity: input_boolean.mostra_dettagli_guasti
+      name: Dettagli
+      icon: mdi:format-list-bulleted
+      show_state: false
+      show_icon: true
+      color: blue
+      tap_action:
+        action: toggle
+  - type: markdown
+    content: |-
+      {%- set labels = {
+        'mancanza_rete': 'Mancanza rete', 'batteria_inefficiente': 'Batteria inefficiente',
+        'fusibile_zone': 'Fusibile zone', 'fusibile_i_bus': 'Fusibile I-BUS',
+        'linea_telefonica': 'Linea telefonica', 'modulo_gsm': 'Modulo GSM', 'jamming_radio': 'Disturbo radio (jamming)',
+        'batteria_sensori_radio': 'Batteria sensori radio', 'perdita_sensori_radio': 'Perdita sensori radio',
+        'sabotaggio_centrale': 'Sabotaggio centrale', 'coperchio_centrale': 'Coperchio centrale aperto',
+        'sabotaggio_lettori': 'Sabotaggio lettori', 'sabotaggio_tastiere': 'Sabotaggio tastiere',
+        'sabotaggio_espansioni': 'Sabotaggio espansioni' } -%}
+      {%- set info = { 'manutenzione': 'Manutenzione', 'programmazione': 'Programmazione', 'reset': 'Reset',
+        'internet': 'Internet', 'vocale': 'Vocale' } -%}
+      {%- set ns = namespace(on=[], info=[]) -%}
+      {%- for k, v in labels.items() if is_state('binary_sensor.inim_smartliving_1050_' ~ k, 'on') %}{% set ns.on = ns.on + [v] %}{% endfor -%}
+      {%- for k, v in info.items() if is_state('binary_sensor.inim_smartliving_1050_' ~ k, 'on') %}{% set ns.info = ns.info + [v] %}{% endfor -%}
+      {%- if ns.on %}⚠️ **{{ ns.on | join(' · ') }}**{% else %}✅ Nessun guasto o sabotaggio della centrale{% endif %}
+      {%- if ns.info %}
+
+      ℹ️ {{ ns.info | join(' · ') }}{% endif %}
+    grid_options:
+      columns: 12
+  - color: state
+    type: entities
+    entities:
+    - entity: binary_sensor.inim_smartliving_1050_mancanza_rete
+      name: Mancanza rete
+    - entity: binary_sensor.inim_smartliving_1050_batteria_inefficiente
+      name: Batteria inefficiente
+    - entity: binary_sensor.inim_smartliving_1050_fusibile_zone
+      name: Fusibile zone
+    - entity: binary_sensor.inim_smartliving_1050_fusibile_i_bus
+      name: Fusibile I-BUS
+    - entity: binary_sensor.inim_smartliving_1050_linea_telefonica
+      name: Linea telefonica
+    - entity: binary_sensor.inim_smartliving_1050_modulo_gsm
+      name: Modulo GSM (Nexus)
+    - entity: binary_sensor.inim_smartliving_1050_jamming_radio
+      name: Jamming radio
+    - entity: binary_sensor.inim_smartliving_1050_batteria_sensori_radio
+      name: Batteria sensori radio
+    - entity: binary_sensor.inim_smartliving_1050_perdita_sensori_radio
+      name: Perdita sensori radio
+    - type: section
+      label: Sabotaggi
+    - entity: binary_sensor.inim_smartliving_1050_sabotaggio_centrale
+      name: Centrale
+    - entity: binary_sensor.inim_smartliving_1050_coperchio_centrale
+      name: Coperchio centrale
+    - entity: binary_sensor.inim_smartliving_1050_sabotaggio_lettori
+      name: Lettori
+    - entity: binary_sensor.inim_smartliving_1050_sabotaggio_tastiere
+      name: Tastiere
+    - entity: binary_sensor.inim_smartliving_1050_sabotaggio_espansioni
+      name: Espansioni
+    - type: section
+      label: Stato
+    - entity: binary_sensor.inim_smartliving_1050_reset
+      name: Reset
+    - entity: binary_sensor.inim_smartliving_1050_internet
+      name: Internet
+    - entity: binary_sensor.inim_smartliving_1050_manutenzione
+      name: Manutenzione
+    - entity: binary_sensor.inim_smartliving_1050_programmazione
+      name: Programmazione
+    - entity: binary_sensor.inim_smartliving_1050_vocale
+      name: Vocale
+    grid_options:
+      columns: 12
+    visibility:
+    - condition: state
+      entity: input_boolean.mostra_dettagli_guasti
+      state: 'on'
+  - type: heading
+    heading: Convertitore
+    heading_style: subtitle
+    icon: mdi:chip
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_connessione_centrale
+    name: Seriale centrale
+    grid_options:
+      columns: 6
+  - type: tile
+    entity: sensor.inim_smartliving_1050_segnale_wifi
+    name: Segnale WiFi
+    grid_options:
+      columns: 6
+  - type: tile
+    entity: sensor.inim_smartliving_1050_uptime
+    name: Acceso da
+    grid_options:
+      columns: 6
+  - type: tile
+    entity: sensor.inim_smartliving_1050_motivo_reset
+    name: Ultimo riavvio
+    grid_options:
+      columns: 6
+  - type: tile
+    entity: sensor.inim_smartliving_1050_heap_libero
+    name: Heap libero
+    grid_options:
+      columns: 6
+  - type: tile
+    entity: sensor.inim_smartliving_1050_disconnessioni_wifi
+    name: Disconnessioni WiFi
+    grid_options:
+      columns: 6
+- type: grid
+  cards:
+  - type: heading
+    heading_style: title
+    icon: mdi:window-closed-variant
+    badges:
+    - type: entity
+      entity: lock.protezione_porta_ingresso
+      name: Porta ingresso esclusa
+      icon: mdi:shield-off-outline
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: lock.protezione_porta_ingresso
+        state: unlocked
+    - type: entity
+      entity: lock.protezione_finestra_cucina
+      name: Finestra cucina esclusa
+      icon: mdi:shield-off-outline
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: lock.protezione_finestra_cucina
+        state: unlocked
+    - type: entity
+      entity: lock.protezione_finestra_sala
+      name: Finestra sala esclusa
+      icon: mdi:shield-off-outline
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: lock.protezione_finestra_sala
+        state: unlocked
+    - type: entity
+      entity: lock.protezione_radar_sala
+      name: Radar sala esclusa
+      icon: mdi:shield-off-outline
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: lock.protezione_radar_sala
+        state: unlocked
+    - type: entity
+      entity: lock.protezione_finestra_camera
+      name: Finestra camera esclusa
+      icon: mdi:shield-off-outline
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: lock.protezione_finestra_camera
+        state: unlocked
+    - type: entity
+      entity: lock.protezione_finestra_bagno
+      name: Finestra bagno esclusa
+      icon: mdi:shield-off-outline
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: lock.protezione_finestra_bagno
+        state: unlocked
+    - type: entity
+      entity: lock.protezione_radar_corridoio
+      name: Radar corridoio esclusa
+      icon: mdi:shield-off-outline
+      color: orange
+      show_state: false
+      show_icon: true
+      tap_action:
+        action: more-info
+      visibility:
+      - condition: state
+        entity: lock.protezione_radar_corridoio
+        state: unlocked
+    heading: Zone
+  - type: heading
+    heading: Piano terra
+    heading_style: subtitle
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_porta_ingresso
+    name: Porta ingresso
+    icon_tap_action:
+      action: more-info
+      entity: lock.protezione_porta_ingresso
+    hold_action:
+      action: more-info
+      entity: lock.protezione_porta_ingresso
+    visibility:
+    - condition: state
+      entity: lock.protezione_porta_ingresso
+      state_not: unlocked
+  - type: tile
+    entity: lock.protezione_porta_ingresso
+    name: Porta ingresso · esclusa
+    icon: mdi:shield-off
+    color: red
+    state_content: last_changed
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    visibility:
+    - condition: state
+      entity: lock.protezione_porta_ingresso
+      state: unlocked
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_finestra_cucina
+    name: Finestra cucina
+    icon_tap_action:
+      action: more-info
+      entity: lock.protezione_finestra_cucina
+    hold_action:
+      action: more-info
+      entity: lock.protezione_finestra_cucina
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_cucina
+      state_not: unlocked
+  - type: tile
+    entity: lock.protezione_finestra_cucina
+    name: Finestra cucina · esclusa
+    icon: mdi:shield-off
+    color: red
+    state_content: last_changed
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_cucina
+      state: unlocked
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_finestra_sala
+    name: Finestra sala
+    icon_tap_action:
+      action: more-info
+      entity: lock.protezione_finestra_sala
+    hold_action:
+      action: more-info
+      entity: lock.protezione_finestra_sala
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_sala
+      state_not: unlocked
+  - type: tile
+    entity: lock.protezione_finestra_sala
+    name: Finestra sala · esclusa
+    icon: mdi:shield-off
+    color: red
+    state_content: last_changed
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_sala
+      state: unlocked
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_radar_sala
+    name: Radar sala
+    icon_tap_action:
+      action: more-info
+      entity: lock.protezione_radar_sala
+    hold_action:
+      action: more-info
+      entity: lock.protezione_radar_sala
+    visibility:
+    - condition: state
+      entity: lock.protezione_radar_sala
+      state_not: unlocked
+  - type: tile
+    entity: lock.protezione_radar_sala
+    name: Radar sala · esclusa
+    icon: mdi:shield-off
+    color: red
+    state_content: last_changed
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    visibility:
+    - condition: state
+      entity: lock.protezione_radar_sala
+      state: unlocked
+  - type: heading
+    heading: Zona notte
+    heading_style: subtitle
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_finestra_camera
+    name: Finestra camera
+    icon_tap_action:
+      action: more-info
+      entity: lock.protezione_finestra_camera
+    hold_action:
+      action: more-info
+      entity: lock.protezione_finestra_camera
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_camera
+      state_not: unlocked
+  - type: tile
+    entity: lock.protezione_finestra_camera
+    name: Finestra camera · esclusa
+    icon: mdi:shield-off
+    color: red
+    state_content: last_changed
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_camera
+      state: unlocked
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_finestra_bagno
+    name: Finestra bagno
+    icon_tap_action:
+      action: more-info
+      entity: lock.protezione_finestra_bagno
+    hold_action:
+      action: more-info
+      entity: lock.protezione_finestra_bagno
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_bagno
+      state_not: unlocked
+  - type: tile
+    entity: lock.protezione_finestra_bagno
+    name: Finestra bagno · esclusa
+    icon: mdi:shield-off
+    color: red
+    state_content: last_changed
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    visibility:
+    - condition: state
+      entity: lock.protezione_finestra_bagno
+      state: unlocked
+  - type: tile
+    entity: binary_sensor.inim_smartliving_1050_radar_corridoio
+    name: Radar corridoio
+    icon_tap_action:
+      action: more-info
+      entity: lock.protezione_radar_corridoio
+    hold_action:
+      action: more-info
+      entity: lock.protezione_radar_corridoio
+    visibility:
+    - condition: state
+      entity: lock.protezione_radar_corridoio
+      state_not: unlocked
+  - type: tile
+    entity: lock.protezione_radar_corridoio
+    name: Radar corridoio · esclusa
+    icon: mdi:shield-off
+    color: red
+    state_content: last_changed
+    tap_action:
+      action: more-info
+    icon_tap_action:
+      action: more-info
+    hold_action:
+      action: more-info
+    visibility:
+    - condition: state
+      entity: lock.protezione_radar_corridoio
+      state: unlocked
+- type: grid
+  cards:
+  - type: heading
+    heading: Aree
+    heading_style: title
+    icon: mdi:shield-home
+  - type: tile
+    entity: alarm_control_panel.area_0_perimetro
+    name: Perimetro
+    features:
+    - type: alarm-modes
+      modes:
+      - disarmed
+      - armed_away
+      - armed_home
+      - armed_night
+    state_content: modalita
+  - type: tile
+    entity: alarm_control_panel.area_1_radar_giorno
+    name: Radar giorno
+    features:
+    - type: alarm-modes
+      modes:
+      - disarmed
+      - armed_away
+      - armed_home
+      - armed_night
+    state_content: modalita
+  - type: tile
+    entity: alarm_control_panel.area_2_radar_notte
+    name: Radar notte
+    features:
+    - type: alarm-modes
+      modes:
+      - disarmed
+      - armed_away
+      - armed_home
+      - armed_night
+    state_content: modalita

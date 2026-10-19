@@ -1,0 +1,42 @@
+# Installation of an INIM SmartLiving 1050: a small example. Copy it over installation.yaml and adapt.
+# Included by inim.yaml under "inim:". Every entity is generated from this file.
+# Renaming a zone or an area creates a new Home Assistant entity: rename it in Home Assistant instead.
+
+expansions: 1                  # installed expansion modules (E1, E2, ...), 5 terminals each
+
+# Panel terminals T1-T10, expansion terminals E<n>.T1-T5 (keypads: K<n>.T1-T2 need "zone").
+# Leave a terminal empty if it's not used. Fields:
+#   name: zone name        type: window | door | motion (HA binary_sensor device class)
+#   zone: zone number, only if it differs from the terminal (default: T1=0 ... T10=9, E1.T1=10 ...)
+terminals:
+  T1:     { name: "Porta ingresso", type: door }
+  T2:     { name: "Finestra cucina", type: window }
+  T3:     { name: "Finestra sala", type: window }
+  T4:     { name: "Radar sala", type: motion }
+  T5:     { name: "Finestra camera", type: window }
+  T6:     { name: "Finestra bagno", type: window }
+  T7:
+  T8:
+  T9:
+  T10:
+  E1.T1:  { name: "Radar corridoio", type: motion }
+  E1.T2:
+  E1.T3:
+  E1.T4:
+  E1.T5:
+
+# Areas, 0-based
+areas:
+  0: "Area 0: Perimetro"
+  1: "Area 1: Radar giorno"
+  2: "Area 2: Radar notte"
+
+# Scenarios programmed in the panel: area arm code (12 hex digits, two areas per
+# byte, low nibble = even area; 1 = armed, 2 = stay, 3 = instant, 4 = disarmed).
+# To get the code of a scenario: activate it from the keypad and copy the value of
+# the "Codice scenario" diagnostic sensor.
+scenarios:
+  disarmed:     "444444444444"
+  armed_away:   "114144444444"  # all three areas armed
+  armed_home:   "414444444444"  # perimeter only
+  armed_night:  "134444444444"  # perimeter instant, day radar armed, night radar off

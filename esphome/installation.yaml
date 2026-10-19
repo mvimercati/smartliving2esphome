@@ -1,0 +1,52 @@
+# Installation of the author's INIM SmartLiving 1050 (a smaller starting point: installation.example.yaml).
+# Included by inim.yaml under "inim:". Every entity is generated from this file.
+# Renaming a zone or an area creates a new Home Assistant entity: rename it in Home Assistant instead.
+
+expansions: 2                  # installed expansion modules (E1, E2, ...), 5 terminals each
+
+# Panel terminals T1-T10, expansion terminals E<n>.T1-T5 (keypads: K<n>.T1-T2 need "zone").
+# Leave a terminal empty if it's not used. Fields:
+#   name: zone name        type: window | door | motion (HA binary_sensor device class)
+#   zone: zone number, only if it differs from the terminal (default: T1=0 ... T10=9, E1.T1=10 ...)
+terminals:
+  T1:     { name: "Finestra bagno p2", type: window }
+  T2:     { name: "Finestra camera Giulia", type: window }
+  T3:     { name: "Finestra camera matrimoniale", type: window }
+  T4:     { name: "Finestra camera Sofia", type: window }
+  T5:     { name: "Radar cucina", type: motion }
+  T6:     { name: "Radar sala", type: motion }
+  T7:
+  T8:
+  T9:
+  T10:
+  E1.T1:  { name: "Finestra bagno p1", type: window }
+  E1.T2:  { name: "Finestra sala sx", type: window }
+  E1.T3:  { name: "Finestra cucina", type: window }
+  E1.T4:  { name: "Finestra sala dx", type: window }
+  E1.T5:
+  E2.T1:  { name: "Radar taverna", type: motion }
+  E2.T2:  { name: "Radar box", type: motion }
+  E2.T3:  { name: "Blindata ingresso", type: door }
+  E2.T4:  { name: "Porta box", type: door }
+  E2.T5:  { name: "Finestra taverna", type: window }
+
+# Areas, 0-based
+areas:
+  0: "Area 0: Finestra Taverna"
+  1: "Area 1: Finestre Piano 1"
+  2: "Area 2: Finestre Piano 2"
+  3: "Area 3: Porta Blindata"
+  4: "Area 4: Porta Box"
+  5: "Area 5: Radar Piano 1"
+  6: "Area 6: Radar Taverna"
+  7: "Area 7: Radar Box"
+
+# Scenarios programmed in the panel: area arm code (12 hex digits, two areas per
+# byte, low nibble = even area; 1 = armed, 2 = stay, 3 = instant, 4 = disarmed).
+# To get the code of a scenario: activate it from the keypad and copy the value of
+# the "Codice scenario" diagnostic sensor (sensor.inim_codice_scenario).
+scenarios:
+  disarmed:     "444444444444"
+  armed_away:   "111111114444"
+  armed_home:   "111143144444"
+  armed_night:  "111113334444"

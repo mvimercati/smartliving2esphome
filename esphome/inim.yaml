@@ -1,0 +1,126 @@
+# INIM SmartLiving 1050 alarm panel on the ESP8266 (Wemos D1 mini) of the WiFi-RS232 converter.
+#
+# Home Assistant ──ESPHome API (encrypted)── D1 mini (UART0 swapped, D8/D7) ── RS232 level shifter ── panel
+#
+# The ESP polls the panel and publishes zones, areas and faults. Commands needing the PIN are API
+# actions, called by the template alarm panels and locks of the Home Assistant package
+# (../homeassistant/inim.yaml), which ask for the code: the PIN is never stored.
+# Installation (zones, areas, scenarios): installation.yaml. Build and flash: ../README.md.
+
+substitutions:
+  name: inim-rs232  # same node as the plain converter firmware: Home Assistant keeps the device
+  friendly_name: Inim SmartLiving 1050  # HA device name, prefixed to the entity names
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+esp8266:
+  board: d1_mini  # Wemos D1 mini clone: 4 MB flash, DOUT
+
+logger:
+  baud_rate: 0  # UART0 belongs to the panel: no logs on the serial line
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  # Called by Home Assistant as esphome.inim_rs232_<action>. Modes are Home Assistant alarm
+  # states: disarmed, armed_away, armed_home, armed_night.
+  actions:
+    - action: arm  # a panel scenario
+      variables: {scenario: string, pin: string}
+      then:
+        - lambda: id(panel).arm(scenario, pin);
+    - action: arm_area  # one area, the others unchanged
+      variables: {area: int, mode: string, pin: string}
+      then:
+        - lambda: id(panel).arm_area(area, mode, pin);
+    - action: bypass_zone
+      variables: {zone: int, exclude: bool, pin: string}
+      then:
+        - lambda: id(panel).bypass_zone(zone, exclude, pin);
+    - action: include_all  # include every excluded zone
+      variables: {pin: string}
+      then:
+        - lambda: id(panel).include_all(pin);
+    - action: reset_memory  # alarm and tamper memories of the areas
+      variables: {pin: string}
+      then:
+        - lambda: id(panel).reset_memory(pin);
+
+ota:
+  - platform: esphome
+    encryption: {}  # same key as the api (a password costs ~3.5 KB flash on the 8266)
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none  # no modem sleep: lower latency, fewer lost packets on weak WiFi
+  manual_ip:
+    static_ip: 192.168.1.33
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+  ap:  # fallback hotspot if the WiFi is unreachable
+    ssid: ${name}
+    password: !secret fallback_ap_password
+  on_disconnect:
+    - lambda: id(wifi_disconnects) += 1;
+
+globals:
+  - id: wifi_disconnects  # since boot; published once the WiFi is back
+    type: uint32_t
+    initial_value: "0"
+
+uart:
+  id: panel_uart
+  # UART0 swapped (as in the original RoboRemo sketch): D8/GPIO15 TX, D7/GPIO13 RX to the level shifter.
+  tx_pin: GPIO15
+  rx_pin: GPIO13
+  baud_rate: 57600
+  data_bits: 8
+  parity: EVEN
+  stop_bits: 1
+  rx_buffer_size: 512  # the longest answer is an event log entry (367 bytes)
+
+inim:
+  id: panel
+  <<: !include installation.yaml
+
+# Converter diagnostics (names kept from the plain converter firmware: same entities in HA)
+debug:
+  update_interval: 30s
+
+sensor:
+  - platform: uptime
+    name: Uptime
+  - platform: wifi_signal
+    name: Segnale WiFi
+    update_interval: 60s
+  - platform: debug
+    free:
+      name: Heap libero
+    block:
+      name: Heap blocco max
+    fragmentation:
+      name: Heap frammentazione
+  - platform: template
+    name: Disconnessioni WiFi
+    lambda: return id(wifi_disconnects);
+    update_interval: 60s
+    accuracy_decimals: 0
+    state_class: total_increasing
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: Motivo reset
+
+button:
+  - platform: restart
+    name: Riavvia

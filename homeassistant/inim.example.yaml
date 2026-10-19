@@ -1,0 +1,155 @@
+# Home Assistant side of the ESPHome firmware esphome/inim.yaml, for the example installation
+# esphome/installation.example.yaml (INIM SmartLiving 1050). Copy it over inim.yaml and adapt.
+#
+# The ESP publishes the panel states; the alarm panels and locks below ask for the PIN and pass it
+# to the ESP actions (esphome.inim_rs232_*): the PIN is never stored. One alarm panel per area and
+# one lock per zone, with the area and zone numbers of the installation.
+#
+# The ESP entity ids are those Home Assistant gives a new device named "Inim SmartLiving 1050"
+# (friendly_name in esphome/inim.yaml): sensor.inim_smartliving_1050_<entity name>.
+#
+# Installed as a package, in configuration.yaml:
+#   homeassistant:
+#     packages:
+#       inim: !include packages/inim.yaml
+#
+# The area panels and zone locks share the settings of the first one of their list (YAML anchor)
+# and differ only in name, ids and number (variables).
+
+template:
+  - variables:
+      # INIM arm mode of an area, as shown to the user, and its icon
+      mode_text:
+        armed_away: Inserita  # with entry/exit delays
+        armed_home: Parziale
+        armed_night: Immediata  # no delay: alarm right away
+        disarmed: Disinserita
+        triggered: In allarme
+        pending: In corso
+      mode_icon:
+        armed_away: mdi:shield-lock
+        armed_home: mdi:shield-half-full
+        armed_night: mdi:shield-alert
+        disarmed: mdi:shield-off-outline
+        triggered: mdi:alarm-light
+      pin_format: "^[0-9]{1,6}$"
+
+    alarm_control_panel:
+      # Panel scenarios
+      - name: Antifurto
+        unique_id: inim_alarm
+        state: "{{ states('sensor.inim_smartliving_1050_stato_antifurto') }}"
+        availability: "{{ is_state('binary_sensor.inim_smartliving_1050_connessione_centrale', 'on') }}"
+        code_format: number
+        code_arm_required: true
+        arm_away:
+          action: esphome.inim_rs232_arm
+          data: {scenario: armed_away, pin: "{{ code }}"}
+        arm_home:
+          action: esphome.inim_rs232_arm
+          data: {scenario: armed_home, pin: "{{ code }}"}
+        arm_night:
+          action: esphome.inim_rs232_arm
+          data: {scenario: armed_night, pin: "{{ code }}"}
+        disarm:
+          action: esphome.inim_rs232_arm
+          data: {scenario: disarmed, pin: "{{ code }}"}
+
+      # Single areas: away = Inserita, home = Parziale, night = Immediata
+      - name: "Area 0: Perimetro"
+        unique_id: inim_area_0
+        variables: {area: 0}
+        <<: &area_panel
+          state: "{{ states('sensor.inim_smartliving_1050_stato_area_' ~ area) }}"
+          icon: "{{ mode_icon.get(states('sensor.inim_smartliving_1050_stato_area_' ~ area), 'mdi:shield-off-outline') }}"
+          attributes:
+            modalita: "{{ mode_text.get(states('sensor.inim_smartliving_1050_stato_area_' ~ area), '') }}"
+          availability: "{{ is_state('binary_sensor.inim_smartliving_1050_connessione_centrale', 'on') }}"
+          code_format: number
+          code_arm_required: true
+          arm_away:
+            action: esphome.inim_rs232_arm_area
+            data: {area: "{{ area }}", mode: armed_away, pin: "{{ code }}"}
+          arm_home:
+            action: esphome.inim_rs232_arm_area
+            data: {area: "{{ area }}", mode: armed_home, pin: "{{ code }}"}
+          arm_night:
+            action: esphome.inim_rs232_arm_area
+            data: {area: "{{ area }}", mode: armed_night, pin: "{{ code }}"}
+          disarm:
+            action: esphome.inim_rs232_arm_area
+            data: {area: "{{ area }}", mode: disarmed, pin: "{{ code }}"}
+      - name: "Area 1: Radar giorno"
+        unique_id: inim_area_1
+        variables: {area: 1}
+        <<: *area_panel
+      - name: "Area 2: Radar notte"
+        unique_id: inim_area_2
+        variables: {area: 2}
+        <<: *area_panel
+
+    lock:
+      # Zone bypass: locked = zone protected (included), unlocked = excluded
+      - name: Protezione Porta ingresso
+        unique_id: inim_bypass_zone_0
+        variables: {zone: 0}
+        <<: &zone_lock
+          state: "{{ 'unlocked' if is_state('binary_sensor.inim_smartliving_1050_esclusione_zona_' ~ zone, 'on') else 'locked' }}"
+          availability: "{{ is_state('binary_sensor.inim_smartliving_1050_connessione_centrale', 'on') }}"
+          code_format: "{{ pin_format }}"
+          lock:
+            action: esphome.inim_rs232_bypass_zone
+            data: {zone: "{{ zone }}", exclude: false, pin: "{{ code }}"}
+          unlock:
+            action: esphome.inim_rs232_bypass_zone
+            data: {zone: "{{ zone }}", exclude: true, pin: "{{ code }}"}
+      - name: Protezione Finestra cucina
+        unique_id: inim_bypass_zone_1
+        variables: {zone: 1}
+        <<: *zone_lock
+      - name: Protezione Finestra sala
+        unique_id: inim_bypass_zone_2
+        variables: {zone: 2}
+        <<: *zone_lock
+      - name: Protezione Radar sala
+        unique_id: inim_bypass_zone_3
+        variables: {zone: 3}
+        <<: *zone_lock
+      - name: Protezione Finestra camera
+        unique_id: inim_bypass_zone_4
+        variables: {zone: 4}
+        <<: *zone_lock
+      - name: Protezione Finestra bagno
+        unique_id: inim_bypass_zone_5
+        variables: {zone: 5}
+        <<: *zone_lock
+      - name: Protezione Radar corridoio
+        unique_id: inim_bypass_zone_10
+        variables: {zone: 10}
+        <<: *zone_lock
+
+      # Unlocked = some zone is excluded; locking (with the code) includes them all
+      - name: Esclusioni zone
+        unique_id: inim_bypassed_zones
+        icon: mdi:shield-sync
+        state: "{{ 'unlocked' if is_state('binary_sensor.inim_smartliving_1050_zone_escluse', 'on') else 'locked' }}"
+        availability: "{{ is_state('binary_sensor.inim_smartliving_1050_connessione_centrale', 'on') }}"
+        code_format: "{{ pin_format }}"
+        lock:
+          action: esphome.inim_rs232_include_all
+          data: {pin: "{{ code }}"}
+        unlock: []  # nothing to do
+
+      # Unlocked = some area has alarm or tamper memory; locking (with the code) resets them
+      - name: Memorie allarme
+        unique_id: inim_memories
+        icon: mdi:history
+        state: >-
+          {{ 'unlocked' if is_state('binary_sensor.inim_smartliving_1050_memoria_allarme', 'on')
+             or is_state('binary_sensor.inim_smartliving_1050_memoria_sabotaggio', 'on') else 'locked' }}
+        availability: "{{ is_state('binary_sensor.inim_smartliving_1050_connessione_centrale', 'on') }}"
+        code_format: "{{ pin_format }}"
+        lock:
+          action: esphome.inim_rs232_reset_memory
+          data: {pin: "{{ code }}"}
+        unlock: []  # nothing to do
