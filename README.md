@@ -32,7 +32,7 @@ Entity names are in Italian, as the panel's own texts.
 | `esphome/inim.yaml` | device: WiFi, API actions, UART, converter diagnostics |
 | `esphome/installation.yaml` | zones (terminals), areas, scenarios of the author's installation |
 | `esphome/installation.example.yaml` | a smaller installation to start from |
-| `esphome/secrets.example.yaml` | model of `secrets.yaml` (WiFi, API key, fallback AP password; gitignored) |
+| `esphome/secrets.example.yaml` | model of `secrets.yaml` (WiFi, API key; gitignored) |
 | `esphome/components/inim/` | ESPHome external component: `protocol.h` (frames, pure), `inim.h/.cpp` (poll loop, commands), `__init__.py` (generates the entities from the installation) |
 | `esphome/tests/test_protocol.cpp` | host test of the protocol helpers |
 | `homeassistant/inim.yaml`, `inim.example.yaml` | Home Assistant package: alarm panels and locks that ask for the PIN |
@@ -64,7 +64,7 @@ gives a new device. The author's files keep the entity ids of an earlier MQTT br
 
    ```sh
    cd esphome
-   ESPHOME="docker run --rm --network host -v $PWD:/config ghcr.io/esphome/esphome:2026.10.0b4"
+   ESPHOME="docker run --rm --network host -v $PWD:/config ghcr.io/esphome/esphome:2026.10.0"
    $ESPHOME config inim.yaml                          # validate
    $ESPHOME compile inim.yaml
    $ESPHOME upload inim.yaml --device 192.168.1.33    # OTA

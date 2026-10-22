@@ -65,9 +65,6 @@ wifi:
     static_ip: 192.168.1.33
     gateway: 192.168.1.1
     subnet: 255.255.255.0
-  ap:  # fallback hotspot if the WiFi is unreachable
-    ssid: ${name}
-    password: !secret fallback_ap_password
   on_disconnect:
     - lambda: id(wifi_disconnects) += 1;
 
